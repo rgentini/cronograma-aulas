@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cronograma de Aulas</title>
+    <title>Gerador de Cronograma de Aulas</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -389,8 +389,8 @@
       <div class="header">
         <img src="logosenac.png" alt="Logo do Senac" />
         <div class="header-content">
-          <h1>Cronograma de aulas</h1>
-          <p>Defina a data da primeira aula, os dias escolhidos.</p>
+          <h1>Gerador de Cronograma de Aulas</h1>
+          <p>Insira as informações necessárias para gerar o cronograma de aulas.</p>
         </div>
       </div>
 
@@ -403,12 +403,12 @@
 
           <label>
             Carga horária do curso
-            <input type="text" id="courseLoad" placeholder="Ex.: 360 horas" required />
+            <input type="text" id="courseLoad" placeholder="Digite só as horas Ex.: 160" required />
           </label>
 
           <label>
             Duração da aula
-            <input type="text" id="classDuration" placeholder="Ex.: 1h30" required />
+            <input type="text" id="classDuration" placeholder="Informe a duração da aula 3h30 (ex.: 3,5) " required />
           </label>
 
           <label>
@@ -428,7 +428,7 @@
 
           <label>
             Quantidade total de aulas do curso
-            <input type="number" id="totalClasses" min="1" value="20" required />
+            <input type="number" id="totalClasses" min="1" value="160" required />
           </label>
 
           <label>
