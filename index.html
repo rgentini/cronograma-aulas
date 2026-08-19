@@ -245,142 +245,40 @@
         font-size: 0.95rem;
       }
 
-      ul {
-        padding-left: 20px;
+      table.uc-table,
+      table.schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        background: #0b1220;
+        color: #fff;
+        border-radius: 8px;
+        overflow: hidden;
       }
 
-      li {
-        margin-bottom: 8px;
+      table.uc-table th,
+      table.uc-table td,
+      table.schedule-table th,
+      table.schedule-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        text-align: left;
+        font-size: 0.95rem;
       }
 
-      .past {
-        color: #93c5fd;
-      }
-
-      .future {
-        color: #fef3c7;
-      }
-
-      @media (max-width: 640px) {
-        body {
-          padding: 12px;
-          place-items: start center;
-        }
-
-        .card {
-          padding: 16px;
-          border-radius: 12px;
-        }
-
-        .header {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 10px;
-        }
-
-        .header img {
-          width: 88px;
-          padding: 6px;
-        }
-
-        .header-content h1 {
-          font-size: 1.3rem;
-        }
-
-        .header-content p {
-          font-size: 0.95rem;
-        }
-
-        .grid {
-          grid-template-columns: 1fr;
-          margin-top: 12px;
-        }
-
-        .day-options {
-          gap: 8px;
-        }
-
-        .day-options label,
-        .teacher-grid .teacher-field {
-          width: 100%;
-          box-sizing: border-box;
-        }
-
-        .teacher-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .actions {
-          flex-direction: column;
-        }
-
-        button {
-          width: 100%;
-          padding: 12px;
-        }
-
-        .summary {
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .pill {
-          width: 100%;
-          box-sizing: border-box;
-        }
+      table.uc-table thead th,
+      table.schedule-table thead th {
+        background: rgba(255,255,255,0.03);
+        font-weight: 700;
       }
 
       @media print {
-        body {
-          background: #fff;
-          color: #000;
-          display: block;
-          padding: 0;
-        }
-
-        .card {
-          box-shadow: none;
-          border: none;
-          background: #fff;
-          width: 100%;
-          padding: 0;
-        }
-
-        form,
-        .actions {
-          display: none !important;
-        }
-
-        .result {
-          border-top: none;
-          margin-top: 0;
-          padding-top: 0;
-        }
-
-        .pill {
-          background: #f1f5f9;
-          color: #000;
-        }
-
-        .past,
-        .future {
-          color: #111827 !important;
-          font-weight: 700;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-        .past {
-          background: #dbeafe;
-          padding: 4px 8px;
-          border-radius: 6px;
-        }
-
-        .future {
-          background: #fef3c7;
-          padding: 4px 8px;
-          border-radius: 6px;
-        }
+        body { background: #fff; color: #000; }
+        header, .header, form, .actions, .day-options, .holiday-picker, .teacher-grid, #ucSection, button, .table-controls { display: none !important; }
+        .card { background: #fff; border: none; box-shadow: none; }
+        table.uc-table, table.schedule-table { color: #000; background: #fff; }
+        tr.page-break { page-break-after: always; }
+        thead { display: table-header-group; }
       }
     </style>
   </head>
@@ -401,10 +299,19 @@
             <input type="text" id="courseName" placeholder="Ex.: Informática" required />
           </label>
 
-          <label>
-            Carga horária do curso
-            <input type="text" id="courseLoad" placeholder="Digite só as horas Ex.: 160" required />
-          </label>
+          <div id="ucSection">
+            <label>Unidades Curriculares (UC)</label>
+            <div id="ucList"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" id="addUc">Adicionar UC</button>
+              <button type="button" id="removeUc" class="secondary">Remover última UC</button>
+            </div>
+
+            <label>
+              Carga horária do curso
+              <input type="text" id="courseLoad" readonly placeholder="Total das UCs será calculado" required />
+            </label>
+          </div>
 
           <label>
             Duração da aula
@@ -471,29 +378,12 @@
 
       <footer>
         Desenvolvido por Rodrigo Gentini<br />
-        Versão 1.0
+        Versão 1.3
       </footer>
     </div>
 
     <script>
       const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-      const dayOptions = document.getElementById("dayOptions");
-      const form = document.getElementById("scheduleForm");
-      const result = document.getElementById("result");
-      const exportPdfButton = document.getElementById("exportPdf");
-      const totalClassesInput = document.getElementById("totalClasses");
-      const courseLoadInput = document.getElementById("courseLoad");
-      const classDurationInput = document.getElementById("classDuration");
-      const holidaysInput = document.getElementById("holidays");
-      const holidaysCalendar = document.getElementById("holidaysCalendar");
-      const holidaySummary = document.getElementById("holidaySummary");
-      const monthLabel = document.getElementById("calendarMonthLabel");
-      const prevMonthButton = document.getElementById("prevMonth");
-      const nextMonthButton = document.getElementById("nextMonth");
-      const teacherGrid = document.getElementById("teacherGrid");
-      let currentHolidayMonth = new Date();
-      let selectedHolidayDates = new Set();
-
       const weekdayMapping = {
         Domingo: 0,
         Segunda: 1,
@@ -503,6 +393,92 @@
         Sexta: 5,
         Sábado: 6,
       };
+      const dayOptions = document.getElementById("dayOptions");
+      const form = document.getElementById("scheduleForm");
+      const result = document.getElementById("result");
+      const exportPdfButton = document.getElementById("exportPdf");
+      const totalClassesInput = document.getElementById("totalClasses");
+      const courseLoadInput = document.getElementById("courseLoad");
+      const classDurationInput = document.getElementById("classDuration");
+      const holidaysInput = document.getElementById("holidays");
+      const ucList = document.getElementById("ucList");
+      const addUcButton = document.getElementById("addUc");
+      const removeUcButton = document.getElementById("removeUc");
+      const holidaysCalendar = document.getElementById("holidaysCalendar");
+      const holidaySummary = document.getElementById("holidaySummary");
+      const monthLabel = document.getElementById("calendarMonthLabel");
+      const prevMonthButton = document.getElementById("prevMonth");
+      const nextMonthButton = document.getElementById("nextMonth");
+      const teacherGrid = document.getElementById("teacherGrid");
+      let currentHolidayMonth = new Date();
+      let selectedHolidayDates = new Set();
+      let lastGeneratedSchedule = [];
+
+      // Funções para gerenciar UCs (Unidades Curriculares)
+      function createUcRow(index = null, name = "UC", hours = "0") {
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.gap = "8px";
+        row.style.alignItems = "center";
+        row.style.marginTop = "8px";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.placeholder = `UC ${index !== null ? index : ""}`;
+        nameInput.value = name;
+        nameInput.style.flex = "1";
+
+        const hoursInput = document.createElement("input");
+        hoursInput.type = "number";
+        hoursInput.min = "0";
+        hoursInput.step = "0.5";
+        hoursInput.value = hours;
+        hoursInput.style.width = "140px";
+
+        hoursInput.addEventListener("input", () => {
+          recalcUCTotal();
+        });
+
+        row.appendChild(nameInput);
+        row.appendChild(hoursInput);
+        return row;
+      }
+
+      function recalcUCTotal() {
+        if (!ucList) return;
+        const inputs = ucList.querySelectorAll("input[type='number']");
+        let total = 0;
+        inputs.forEach((inp) => {
+          const v = parseFloat(inp.value);
+          if (!Number.isNaN(v)) total += v;
+        });
+        courseLoadInput.value = total > 0 ? String(total) : "";
+        syncTotalClasses();
+      }
+
+      function addUc(name = "UC", hours = "0") {
+        if (!ucList) return;
+        const index = ucList.children.length + 1;
+        const row = createUcRow(index, name, hours);
+        ucList.appendChild(row);
+        recalcUCTotal();
+      }
+
+      function removeLastUc() {
+        if (!ucList) return;
+        if (ucList.lastElementChild) {
+          ucList.removeChild(ucList.lastElementChild);
+          recalcUCTotal();
+        }
+      }
+
+      if (addUcButton) addUcButton.addEventListener('click', () => addUc(`UC${ucList.children.length + 1}`, '0'));
+      if (removeUcButton) removeUcButton.addEventListener('click', () => removeLastUc());
+
+      // Inicializar com ao menos uma UC
+      if (ucList && ucList.children.length === 0) {
+        addUc('UC1', '48');
+      }
 
       const weekdayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -542,6 +518,16 @@
           acc[index] = teacher;
           return acc;
         }, []);
+      }
+
+      function getUCs() {
+        if (!ucList) return [];
+        return Array.from(ucList.children).map((row) => {
+          const inputs = row.querySelectorAll("input");
+          const name = inputs[0] ? inputs[0].value.trim() : "";
+          const hours = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
+          return { name, hours };
+        });
       }
 
       function formatDate(date) {
@@ -608,19 +594,26 @@
           : "Nenhum dia selecionado";
         holidaysInput.value = Array.from(selectedHolidayDates).sort().join(",");
 
-        holidaysCalendar.querySelectorAll(".holiday-day").forEach((button) => {
-          button.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleHoliday(button.dataset.date);
+        // Delegação de eventos: adiciona listener uma vez para o container
+        if (!holidaysCalendar._listenerAdded) {
+          holidaysCalendar.addEventListener("click", (event) => {
+            const btn = event.target.closest && event.target.closest('.holiday-day');
+            if (btn && btn.dataset && btn.dataset.date) {
+              event.preventDefault();
+              toggleHoliday(btn.dataset.date);
+            }
           });
 
-          button.addEventListener("touchend", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleHoliday(button.dataset.date);
+          holidaysCalendar.addEventListener("touchend", (event) => {
+            const btn = event.target.closest && event.target.closest('.holiday-day');
+            if (btn && btn.dataset && btn.dataset.date) {
+              event.preventDefault();
+              toggleHoliday(btn.dataset.date);
+            }
           }, { passive: false });
-        });
+
+          holidaysCalendar._listenerAdded = true;
+        }
       }
 
       function toggleHoliday(dateKey) {
@@ -630,7 +623,14 @@
           selectedHolidayDates.add(dateKey);
         }
 
+        // Atualiza campo e renderiza
+        holidaysInput.value = Array.from(selectedHolidayDates).sort().join(",");
         renderHolidayCalendar();
+      }
+
+      function initSelectedHolidaysFromInput() {
+        const parsed = parseHolidays(holidaysInput.value);
+        selectedHolidayDates = new Set(parsed);
       }
 
       function buildSchedule(startDate, requiredCount, selectedDays) {
@@ -651,6 +651,59 @@
             schedule.push(new Date(current));
           }
           current.setDate(current.getDate() + 1);
+        }
+
+        return schedule;
+      }
+
+      // Build schedule respecting individual UCs hours and class duration
+      function buildScheduleForUCs(startDate, ucs, classDurationHours, selectedDays) {
+        if (!Array.isArray(ucs) || ucs.length === 0) {
+          throw new Error("Adicione pelo menos uma UC com horas.");
+        }
+
+        if (selectedDays.length === 0) {
+          throw new Error("Selecione pelo menos um dia de aula.");
+        }
+
+        if (!classDurationHours || classDurationHours <= 0) {
+          throw new Error("Informe a duração da aula válida.");
+        }
+
+        const holidays = parseHolidays(holidaysInput.value);
+        const schedule = [];
+        const current = new Date(startDate);
+        current.setHours(0, 0, 0, 0);
+
+        // For each UC, compute number of classes needed and schedule them sequentially
+        for (let ucIndex = 0; ucIndex < ucs.length; ucIndex += 1) {
+          const uc = ucs[ucIndex];
+          const totalHours = Number(uc.hours) || 0;
+          const classesNeeded = Math.max(0, Math.ceil(totalHours / classDurationHours));
+
+          let scheduledForThisUc = 0;
+          while (scheduledForThisUc < classesNeeded) {
+            const key = formatDateKey(current);
+            const isHoliday = holidays.includes(key);
+
+            if (!isHoliday && selectedDays.includes(current.getDay())) {
+              const remainingHours = totalHours - scheduledForThisUc * classDurationHours;
+              const classHour = Math.min(classDurationHours, Math.max(0, remainingHours));
+
+              schedule.push({
+                date: new Date(current),
+                ucIndex: ucIndex,
+                ucName: uc.name || `UC ${ucIndex + 1}`,
+                classNumberInUc: scheduledForThisUc + 1,
+                classesNeeded: classesNeeded,
+                classHour: classHour,
+              });
+
+              scheduledForThisUc += 1;
+            }
+
+            current.setDate(current.getDate() + 1);
+          }
         }
 
         return schedule;
@@ -716,6 +769,7 @@
         const selectedDays = getSelectedDays();
         const holidaysInputValue = holidaysInput.value;
         const teacherNames = getTeacherNames();
+        const ucs = getUCs();
 
         if (!courseName || !period) {
           result.innerHTML = "<p>Informe o nome do curso e o período.</p>";
@@ -732,39 +786,133 @@
           return;
         }
 
-        try {
-          syncTotalClasses();
+          try {
+          // recalcula total de aulas com base nas UCs individuais
+          const ucs = getUCs();
+          const classDurationHours = parseDurationToHours(classDurationInput.value);
+
+          if (!classDurationHours) {
+            throw new Error("Informe a duração da aula válida.");
+          }
 
           const startDate = new Date(`${startDateInput}T00:00:00`);
-          const schedule = buildSchedule(startDate, totalClasses, selectedDays);
+          const schedule = buildScheduleForUCs(startDate, ucs, classDurationHours, selectedDays);
 
           const futureClasses = schedule;
-          const nextClass = futureClasses[0];
-          const lastClass = schedule[schedule.length - 1];
+          lastGeneratedSchedule = futureClasses.slice();
+          const nextClass = futureClasses[0] ? futureClasses[0].date : null;
+          const lastClass = futureClasses.length ? futureClasses[futureClasses.length - 1].date : null;
 
+          // Atualiza total de aulas no formulário
+          totalClassesInput.value = futureClasses.length || 0;
           document.getElementById("lastClassDate").value = lastClass ? formatDate(lastClass) : "";
+
+          // resumo por UC em tabela
+          const ucSummariesTable = `
+            <table class="uc-table">
+              <thead><tr><th>UC</th><th>Horas</th><th>Aulas</th></tr></thead>
+              <tbody>
+                ${ucs
+                  .map((u, idx) => {
+                    const classesForUc = futureClasses.filter((it) => it.ucIndex === idx).length;
+                    return `<tr><td>${u.name || `UC ${idx + 1}`}</td><td>${u.hours}</td><td>${classesForUc}</td></tr>`;
+                  })
+                  .join("")}
+              </tbody>
+            </table>`;
 
           result.innerHTML = `
             <div class="summary">
               <span class="pill">Curso: ${courseName}</span>
-              <span class="pill">Carga horária: ${document.getElementById("courseLoad").value || "—"}</span>
+              <span class="pill">Carga horária total: ${document.getElementById("courseLoad").value || "—"}</span>
               <span class="pill">Duração da aula: ${document.getElementById("classDuration").value || "—"}</span>
               <span class="pill">Período: ${period}</span>
-              <span class="pill">Total de aulas: ${totalClasses}</span>
+              <span class="pill">Total de aulas: ${futureClasses.length}</span>
               <span class="pill">Próxima aula: ${nextClass ? formatDate(nextClass) : "—"}</span>
               <span class="pill">Último dia do curso: ${lastClass ? formatDate(lastClass) : "—"}</span>
               <span class="pill">Feriados: ${holidaysInputValue || "Nenhum"}</span>
             </div>
 
-            <ul>
-              ${futureClasses
-                .map((date, index) => {
-                  const teacher = teacherNames[date.getDay()] || "—";
-                  return `<li class="future">Aula ${index + 1} — ${formatDate(date)} (${dayNames[date.getDay()]}) — Docente: ${teacher}</li>`;
-                })
-                .join("")}
-            </ul>
+            <div class="summary">${ucSummariesTable}</div>
+
+            <div class="table-controls" style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+              <label style="font-weight:700;color:#cbd5e1;">Linhas por página:</label>
+              <select id="pageSizeSelect">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="100">100</option>
+              </select>
+              <button type="button" id="prevPage">Anterior</button>
+              <button type="button" id="nextPage">Próxima</button>
+              <span id="pageIndicator" style="margin-left:8px;color:#cbd5e1;"></span>
+            </div>
+
+            <table class="schedule-table" id="scheduleTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Data</th>
+                  <th>Dia</th>
+                  <th>Docente</th>
+                  <th>UC</th>
+                  <th>Aula (x/y)</th>
+                  <th>Duração (h)</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTbody">
+              </tbody>
+            </table>
           `;
+
+          // Paginação
+          (function setupPagination() {
+            const pageSizeSelect = document.getElementById('pageSizeSelect');
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            const pageIndicator = document.getElementById('pageIndicator');
+            const tbody = document.getElementById('scheduleTbody');
+
+            let pageSize = Number(pageSizeSelect.value) || 10;
+            let currentPage = 1;
+
+            function renderPage() {
+              const start = (currentPage - 1) * pageSize;
+              const end = Math.min(start + pageSize, futureClasses.length);
+              const rows = futureClasses.slice(start, end).map((entry, idx) => {
+                const index = start + idx;
+                const teacher = teacherNames[entry.date.getDay()] || "—";
+                const isPageBreak = ((index + 1) % pageSize) === 0;
+                return `<tr class="${isPageBreak ? 'page-break' : ''}"><td>${index + 1}</td><td>${formatDate(entry.date)}</td><td>${dayNames[entry.date.getDay()]}</td><td>${teacher}</td><td>${entry.ucName}</td><td>${entry.classNumberInUc}/${entry.classesNeeded}</td><td>${entry.classHour}</td></tr>`;
+              }).join('');
+              tbody.innerHTML = rows;
+              pageIndicator.textContent = `Página ${currentPage} / ${Math.max(1, Math.ceil(futureClasses.length / pageSize))}`;
+              prevBtn.disabled = currentPage <= 1;
+              nextBtn.disabled = currentPage >= Math.ceil(futureClasses.length / pageSize);
+            }
+
+            pageSizeSelect.addEventListener('change', () => {
+              pageSize = Number(pageSizeSelect.value) || 10;
+              currentPage = 1;
+              renderPage();
+            });
+
+            prevBtn.addEventListener('click', () => {
+              if (currentPage > 1) {
+                currentPage -= 1;
+                renderPage();
+              }
+            });
+
+            nextBtn.addEventListener('click', () => {
+              if (currentPage < Math.ceil(futureClasses.length / pageSize)) {
+                currentPage += 1;
+                renderPage();
+              }
+            });
+
+            renderPage();
+          })();
         } catch (error) {
           document.getElementById("lastClassDate").value = "";
           result.innerHTML = `<p>${error.message}</p>`;
@@ -786,11 +934,163 @@
         renderHolidayCalendar();
       });
 
-      exportPdfButton.addEventListener("click", () => {
-        window.print();
+      exportPdfButton.addEventListener("click", async () => {
+        if (!Array.isArray(lastGeneratedSchedule) || lastGeneratedSchedule.length === 0) {
+          alert('Gere o cronograma antes de exportar para PDF.');
+          return;
+        }
+
+        async function loadHtml2Pdf() {
+          if (window.html2pdf) return window.html2pdf;
+          return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js';
+            s.onload = () => resolve(window.html2pdf);
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+
+        // Esconde temporariamente os badges de resumo (class="pill")
+        // e as tabelas de resumo/cronograma para evitar duplicações no PDF.
+        const _pillEls = Array.from(document.querySelectorAll('.pill'));
+        const _pillPrev = _pillEls.map(e => e.style.display || '');
+        _pillEls.forEach(e => e.style.display = 'none');
+
+        const _tableEls = Array.from(document.querySelectorAll('.summary table, #scheduleTable'));
+        const _tablePrev = _tableEls.map(e => e.style.display || '');
+        _tableEls.forEach(e => e.style.display = 'none');
+
+        // Oculta o rodapé da página (marca HTML) para não aparecer no PDF (já adicionamos rodapé no container)
+        const _pageFooter = document.querySelector('footer');
+        const _pageFooterPrev = _pageFooter ? (_pageFooter.style.display || '') : null;
+        if (_pageFooter) _pageFooter.style.display = 'none';
+
+        try {
+          const html2pdf = await loadHtml2Pdf();
+
+          // Criar container limpo para PDF (um único cabeçalho + data + tabelas)
+          const container = document.createElement('div');
+          container.style.maxWidth = '900px';
+          container.style.margin = '0 auto';
+          container.style.background = '#fff';
+          container.style.color = '#000';
+          container.style.padding = '16px';
+          container.style.boxSizing = 'border-box';
+
+          // Cabeçalho com logo e título (layout para A4 retrato)
+          const now = new Date();
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.alignItems = 'center';
+          header.style.justifyContent = 'flex-start';
+          header.style.gap = '16px';
+          header.style.marginBottom = '12px';
+
+          const logo = document.createElement('img');
+          logo.src = 'logosenac.png';
+          logo.alt = '';
+          logo.style.width = '96px';
+          logo.style.height = 'auto';
+          logo.style.objectFit = 'contain';
+
+          const titleWrap = document.createElement('div');
+          const h1 = document.createElement('h1');
+          h1.textContent = (document.getElementById('courseName').value || '').toUpperCase();
+          h1.style.margin = '0';
+          h1.style.fontSize = '18px';
+          h1.style.letterSpacing = '0.4px';
+          h1.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+          const gen = document.createElement('div');
+          gen.textContent = `Gerado em: ${formatDate(now)} ${now.toLocaleTimeString()}`;
+          gen.style.marginTop = '6px';
+          gen.style.fontSize = '12px';
+          gen.style.color = '#333';
+
+          titleWrap.appendChild(h1);
+          titleWrap.appendChild(gen);
+
+          header.appendChild(logo);
+          header.appendChild(titleWrap);
+          container.appendChild(header);
+
+          // UC summary table
+          const ucs = getUCs();
+
+          // Deduplicar entradas do cronograma por (data, ucIndex, classNumberInUc)
+          const seen = new Set();
+          const scheduleForPdf = lastGeneratedSchedule.filter((entry) => {
+            const key = `${formatDate(entry.date)}|${entry.ucIndex}|${entry.classNumberInUc}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          const ucTable = document.createElement('table');
+          ucTable.style.width = '100%';
+          ucTable.style.borderCollapse = 'collapse';
+          ucTable.innerHTML = `<thead><tr><th style="text-align:left;padding:6px;border-bottom:1px solid #ccc;">UC</th><th style="text-align:left;padding:6px;border-bottom:1px solid #ccc;">Horas</th><th style="text-align:left;padding:6px;border-bottom:1px solid #ccc;">Aulas</th></tr></thead><tbody>${ucs.map((u, idx) => { const classesForUc = scheduleForPdf.filter(it => it.ucIndex === idx).length; return `<tr><td style="padding:6px;border-bottom:1px solid #eee;">${u.name || `UC ${idx+1}`}</td><td style="padding:6px;border-bottom:1px solid #eee;">${u.hours}</td><td style="padding:6px;border-bottom:1px solid #eee;">${classesForUc}</td></tr>`; }).join('')}</tbody>`;
+          container.appendChild(ucTable);
+
+          // Espaço
+          container.appendChild(document.createElement('hr'));
+
+          // Schedule table (todas as aulas)
+          const scheduleTable = document.createElement('table');
+          scheduleTable.style.width = '100%';
+          scheduleTable.style.borderCollapse = 'collapse';
+          scheduleTable.innerHTML = `<thead><tr><th style="padding:6px;border-bottom:1px solid #ccc;">#</th><th style="padding:6px;border-bottom:1px solid #ccc;">Data</th><th style="padding:6px;border-bottom:1px solid #ccc;">Dia</th><th style="padding:6px;border-bottom:1px solid #ccc;">Docente</th><th style="padding:6px;border-bottom:1px solid #ccc;">UC</th><th style="padding:6px;border-bottom:1px solid #ccc;">Aula</th><th style="padding:6px;border-bottom:1px solid #ccc;">Duração (h)</th></tr></thead><tbody>` + scheduleForPdf.map((entry, index) => { const teacher = getTeacherNames()[entry.date.getDay()] || '—'; return `<tr><td style="padding:6px;border-bottom:1px solid #eee;">${index+1}</td><td style="padding:6px;border-bottom:1px solid #eee;">${formatDate(entry.date)}</td><td style="padding:6px;border-bottom:1px solid #eee;">${dayNames[entry.date.getDay()]}</td><td style="padding:6px;border-bottom:1px solid #eee;">${teacher}</td><td style="padding:6px;border-bottom:1px solid #eee;">${entry.ucName}</td><td style="padding:6px;border-bottom:1px solid #eee;">${entry.classNumberInUc}/${entry.classesNeeded}</td><td style="padding:6px;border-bottom:1px solid #eee;">${entry.classHour}</td></tr>`; }).join('') + '</tbody>';
+          container.appendChild(scheduleTable);
+
+          // Rodapé do PDF: Desenvolvido por e versão
+          const footer = document.createElement('div');
+          footer.style.marginTop = '20px';
+          footer.style.fontSize = '11px';
+          footer.style.color = '#666';
+          footer.style.display = 'flex';
+          footer.style.justifyContent = 'space-between';
+          footer.style.alignItems = 'center';
+          const left = document.createElement('div');
+          left.textContent = 'Desenvolvido por Rodrigo Gentini';
+          const right = document.createElement('div');
+          right.textContent = 'Versão 1.3';
+          footer.appendChild(left);
+          footer.appendChild(right);
+          container.appendChild(footer);
+
+          document.body.appendChild(container);
+
+          // filename
+          const courseVal = (document.getElementById('courseName').value || 'cronograma').trim();
+          const safeCourse = courseVal.replace(/[^a-zA-Z0-9\-\_]/g, '_');
+          const pad = (n) => String(n).padStart(2, '0');
+          const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+          const filename = `${safeCourse}_${ts}.pdf`;
+
+          const opt = {
+            margin:       10,
+            filename:     filename,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, logging: false, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+
+          await html2pdf().set(opt).from(container).save();
+          document.body.removeChild(container);
+        } catch (err) {
+          console.warn('html2pdf falhou, usando print fallback', err);
+          window.print();
+        } finally {
+          // Restaura exibição original dos badges e tabelas
+          _pillEls.forEach((e, i) => { e.style.display = _pillPrev[i] || ''; });
+          _tableEls.forEach((e, i) => { e.style.display = _tablePrev[i] || ''; });
+          if (_pageFooter) _pageFooter.style.display = _pageFooterPrev || '';
+        }
       });
 
       document.getElementById("startDate").value = new Date().toISOString().split("T")[0];
+      initSelectedHolidaysFromInput();
       renderHolidayCalendar();
       renderSchedule({ preventDefault() {} });
     </script>
