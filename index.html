@@ -272,6 +272,25 @@
         font-weight: 700;
       }
 
+      /* Mobile / small screens fixes */
+      @media (max-width: 600px) {
+        body { padding: 12px; }
+        .card { width: 100%; padding: 16px; border-radius: 12px; }
+        .header { gap: 10px; }
+        .header img { width: 64px; }
+        .grid { grid-template-columns: 1fr; }
+        .teacher-grid { grid-template-columns: 1fr; }
+        .day-options { gap: 6px; }
+        .teacher-grid .teacher-field { padding: 8px; }
+        .holiday-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .holiday-day { padding: 8px 4px; min-height: 40px; }
+        input[type="date"], input[type="number"], input[type="text"], select, button { width: 100%; box-sizing: border-box; }
+        .actions { flex-direction: column; align-items: stretch; }
+        .result { padding-top: 12px; }
+        table.uc-table, table.schedule-table { display: block; width: 100%; overflow: auto; -webkit-overflow-scrolling: touch; }
+        table.uc-table th, table.uc-table td, table.schedule-table th, table.schedule-table td { white-space: nowrap; }
+      }
+
       @media print {
         body { background: #fff; color: #000; }
         header, .header, form, .actions, .day-options, .holiday-picker, .teacher-grid, #ucSection, button, .table-controls { display: none !important; }
