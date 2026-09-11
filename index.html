@@ -397,7 +397,7 @@
 
       <footer>
         Desenvolvido por Rodrigo Gentini<br />
-        Versão 1.3
+        Versão 1.4
       </footer>
     </div>
 
@@ -546,6 +546,30 @@
           const name = inputs[0] ? inputs[0].value.trim() : "";
           const hours = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
           return { name, hours };
+        });
+      }
+
+      function refreshScheduleUcCounters(schedule) {
+        const counters = new Map();
+        const totals = new Map();
+
+        schedule.forEach((entry) => {
+          totals.set(entry.ucIndex, (totals.get(entry.ucIndex) || 0) + 1);
+        });
+
+        schedule.forEach((entry) => {
+          const current = (counters.get(entry.ucIndex) || 0) + 1;
+          counters.set(entry.ucIndex, current);
+          entry.classNumberInUc = current;
+          entry.classesNeeded = totals.get(entry.ucIndex) || 0;
+        });
+      }
+
+      function updateUcSummary(schedule, ucs) {
+        ucs.forEach((uc, index) => {
+          const row = document.querySelector(`[data-uc-summary-index="${index}"]`);
+          if (!row) return;
+          row.querySelector(".uc-summary-classes").textContent = schedule.filter((entry) => entry.ucIndex === index).length;
         });
       }
 
@@ -834,7 +858,7 @@
                 ${ucs
                   .map((u, idx) => {
                     const classesForUc = futureClasses.filter((it) => it.ucIndex === idx).length;
-                    return `<tr><td>${u.name || `UC ${idx + 1}`}</td><td>${u.hours}</td><td>${classesForUc}</td></tr>`;
+                    return `<tr data-uc-summary-index="${idx}"><td>${u.name || `UC ${idx + 1}`}</td><td>${u.hours}</td><td class="uc-summary-classes">${classesForUc}</td></tr>`;
                   })
                   .join("")}
               </tbody>
@@ -902,7 +926,8 @@
                 const index = start + idx;
                 const teacher = teacherNames[entry.date.getDay()] || "—";
                 const isPageBreak = ((index + 1) % pageSize) === 0;
-                return `<tr class="${isPageBreak ? 'page-break' : ''}"><td>${index + 1}</td><td>${formatDate(entry.date)}</td><td>${dayNames[entry.date.getDay()]}</td><td>${teacher}</td><td>${entry.ucName}</td><td>${entry.classNumberInUc}/${entry.classesNeeded}</td><td>${entry.classHour}</td></tr>`;
+                const ucOptions = ucs.map((uc, ucIndex) => `<option value="${ucIndex}" ${ucIndex === entry.ucIndex ? 'selected' : ''}>${uc.name || `UC ${ucIndex + 1}`}</option>`).join('');
+                return `<tr class="${isPageBreak ? 'page-break' : ''}"><td>${index + 1}</td><td>${formatDate(entry.date)}</td><td>${dayNames[entry.date.getDay()]}</td><td>${teacher}</td><td><select class="schedule-uc-select" data-schedule-index="${index}">${ucOptions}</select></td><td>${entry.classNumberInUc}/${entry.classesNeeded}</td><td>${entry.classHour}</td></tr>`;
               }).join('');
               tbody.innerHTML = rows;
               pageIndicator.textContent = `Página ${currentPage} / ${Math.max(1, Math.ceil(futureClasses.length / pageSize))}`;
@@ -928,6 +953,23 @@
                 currentPage += 1;
                 renderPage();
               }
+            });
+
+            tbody.addEventListener('change', (event) => {
+              const select = event.target.closest('.schedule-uc-select');
+              if (!select) return;
+
+              const scheduleIndex = Number(select.dataset.scheduleIndex);
+              const entry = futureClasses[scheduleIndex];
+              const selectedUcIndex = Number(select.value);
+              const selectedUc = ucs[selectedUcIndex];
+              if (!entry || !selectedUc) return;
+
+              entry.ucIndex = selectedUcIndex;
+              entry.ucName = selectedUc.name || `UC ${selectedUcIndex + 1}`;
+              refreshScheduleUcCounters(futureClasses);
+              updateUcSummary(futureClasses, ucs);
+              renderPage();
             });
 
             renderPage();
