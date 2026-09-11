@@ -1063,6 +1063,12 @@
           h1.style.letterSpacing = '0.4px';
           h1.style.fontFamily = 'Arial, Helvetica, sans-serif';
 
+          const courseLoad = document.createElement('div');
+          courseLoad.textContent = `Carga horária total: ${document.getElementById('courseLoad').value || '—'}`;
+          courseLoad.style.marginTop = '4px';
+          courseLoad.style.fontSize = '13px';
+          courseLoad.style.color = '#333';
+
           const gen = document.createElement('div');
           gen.textContent = `Gerado em: ${formatDate(now)} ${now.toLocaleTimeString()}`;
           gen.style.marginTop = '6px';
@@ -1070,6 +1076,7 @@
           gen.style.color = '#333';
 
           titleWrap.appendChild(h1);
+          titleWrap.appendChild(courseLoad);
           titleWrap.appendChild(gen);
 
           header.appendChild(logo);
